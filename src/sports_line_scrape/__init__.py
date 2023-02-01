@@ -87,7 +87,7 @@ class Scoreboard:
         try:
             self.odds = scrape_games(sport, current_line)
         except Exception as e:
-            print("An error occurred: {}".format(e))
+            print(f"An error occurred:\n{e}")
             return
 
 
