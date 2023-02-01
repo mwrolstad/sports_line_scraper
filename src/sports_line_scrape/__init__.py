@@ -11,6 +11,8 @@ SPORT_DICT = {
     "NBA": "nba",
     "NFL": "nfl",
     "MLB": "mlb",
+    "NHL": "nhl",
+    "CBB": "cbb",
 }
 
 JSON_REGEX = '<script id="__NEXT_DATA__" type="application/json">(.*)</script>'
