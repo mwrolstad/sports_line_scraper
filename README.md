@@ -8,7 +8,7 @@ An easy tool to scrape the current odds listed on sportsline.com
 python3 src/sports_line_scraper/__init__py --sport "NFL" --current_line True
 ```
 
-#### Import and use as a package:
+### Import and use as a package:
 
 ```python
 from sports_line_scrape import OddsScraper
