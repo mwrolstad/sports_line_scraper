@@ -20,7 +20,16 @@ BASE_URL = "https://www.sportsline.com"
 
 
 def extract_json(json_string: str) -> json:
-    return json.loads(json_string)["props"]["initialState"]["oddsPageState"]["pageState"]["data"]["competitionOdds"]
+    return json.loads(json_string)["props"]["initialState"]["oddsPageState"]["pageState"]["data"][
+        "competitionOdds"
+    ]
+
+
+def safe_cast(value: str, to_type: type, default=None):
+    try:
+        return to_type(value)
+    except (ValueError, TypeError):
+        return default
 
 
 def scrape_games(sport: str = "NFL", current_line: bool = True):
@@ -45,7 +54,7 @@ def scrape_games(sport: str = "NFL", current_line: bool = True):
             .strftime(format="%Y-%m-%d")
         )
         game["datetime"] = (
-            datetime.strptime(event["scheduledTime"], "%Y-%m-%dT%H:%M:%S")
+            datetime.strptime(event["scheduledTime"], "%Y-%m-%dT%H:%M:%SZ")
             .replace(tzinfo=pytz.UTC)
             .astimezone(tz.tzlocal())
             .strftime(format="%Y-%m-%dT%H:%M:%SZ")
@@ -69,20 +78,38 @@ def scrape_games(sport: str = "NFL", current_line: bool = True):
         game["away_ml"] = {}
         if "odds" in event:
             for line in event["odds"]:
-                game["home_spread"][line["sportsbookName"]] = float(line["odd"]["pointSpread"][f"{_line}HomeHandicap"])
-                game["home_spread_odds"][line["sportsbookName"]] = int(line["odd"]["pointSpread"][f"{_line}HomeOdds"])
-                game["away_spread"][line["sportsbookName"]] = float(line["odd"]["pointSpread"][f"{_line}AwayHandicap"])
-                game["away_spread_odds"][line["sportsbookName"]] = int(line["odd"]["pointSpread"][f"{_line}AwayOdds"])
-                game["under_odds"][line["sportsbookName"]] = int(line["odd"]["overUnder"][f"{_line}UnderOdd"])
-                game["over_odds"][line["sportsbookName"]] = int(line["odd"]["overUnder"][f"{_line}OverOdd"])
-                game["total"][line["sportsbookName"]] = float(line["odd"]["overUnder"][f"{_line}Total"])
-                game["home_ml"][line["sportsbookName"]] = int(line["odd"]["moneyLine"][f"{_line}HomeOdds"])
-                game["away_ml"][line["sportsbookName"]] = int(line["odd"]["moneyLine"][f"{_line}AwayOdds"])
+                game["home_spread"][line["sportsbookName"]] = safe_cast(
+                    line["odd"]["pointSpread"][f"{_line}HomeHandicap"], float
+                )
+                game["home_spread_odds"][line["sportsbookName"]] = safe_cast(
+                    line["odd"]["pointSpread"][f"{_line}HomeOdds"], int
+                )
+                game["away_spread"][line["sportsbookName"]] = safe_cast(
+                    line["odd"]["pointSpread"][f"{_line}AwayHandicap"], float
+                )
+                game["away_spread_odds"][line["sportsbookName"]] = safe_cast(
+                    line["odd"]["pointSpread"][f"{_line}AwayOdds"], int
+                )
+                game["under_odds"][line["sportsbookName"]] = safe_cast(
+                    line["odd"]["overUnder"][f"{_line}UnderOdd"], int
+                )
+                game["over_odds"][line["sportsbookName"]] = safe_cast(
+                    line["odd"]["overUnder"][f"{_line}OverOdd"], int
+                )
+                game["total"][line["sportsbookName"]] = safe_cast(
+                    line["odd"]["overUnder"][f"{_line}Total"], float
+                )
+                game["home_ml"][line["sportsbookName"]] = safe_cast(
+                    line["odd"]["moneyLine"][f"{_line}HomeOdds"], int
+                )
+                game["away_ml"][line["sportsbookName"]] = safe_cast(
+                    line["odd"]["moneyLine"][f"{_line}AwayOdds"], int
+                )
         game_odds.append(game)
     return game_odds
 
 
-class Scoreboard:
+class OddsScraper:
     def __init__(self, sport: str = "NFL", current_line: bool = True):
         try:
             self.odds = scrape_games(sport, current_line)
@@ -92,7 +119,7 @@ class Scoreboard:
 
 
 def main(sport: str = "NFL", current_line: bool = True):
-    games = Scoreboard(sport=sport)
+    games = OddsScraper(sport=sport, current_line=current_line)
     print(json.dumps(games.odds, indent=2))
 
 
