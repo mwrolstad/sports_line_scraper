@@ -32,7 +32,7 @@ def safe_cast(value: str, to_type: type, default=None):
         return default
 
 
-def scrape_games(sport: str = "NFL", current_line: bool = True):
+def scrape_games(sport: str = "NFL", current_line: bool = True, time_zone: str = None):
     _line = "current" if current_line else "opening"
 
     odds_url = f"{BASE_URL}/{SPORT_DICT[sport]}/odds/picks-against-the-spread/"
@@ -43,20 +43,22 @@ def scrape_games(sport: str = "NFL", current_line: bool = True):
     if len(j) > 0:
         odds = extract_json(j[0])
 
+    local_tz = pytz.timezone(time_zone) if time_zone else tz.tzlocal()
+
     game_odds = []
     for event in odds:
         game = {}
         game["date"] = (
             datetime.strptime(event["scheduledTime"], "%Y-%m-%dT%H:%M:%SZ")
             .replace(tzinfo=pytz.UTC)
-            .astimezone(tz.tzlocal())
+            .astimezone(local_tz)
             .date()
             .strftime(format="%Y-%m-%d")
         )
         game["datetime"] = (
             datetime.strptime(event["scheduledTime"], "%Y-%m-%dT%H:%M:%SZ")
             .replace(tzinfo=pytz.UTC)
-            .astimezone(tz.tzlocal())
+            .astimezone(local_tz)
             .strftime(format="%Y-%m-%dT%H:%M:%SZ")
         )
         game["home_team"] = event["homeTeam"]["location"] + " " + event["homeTeam"]["nickName"]
@@ -66,7 +68,7 @@ def scrape_games(sport: str = "NFL", current_line: bool = True):
         game["away_team"] = event["awayTeam"]["location"] + " " + event["awayTeam"]["nickName"]
         game["away_team_loc"] = event["awayTeam"]["location"]
         game["away_team_name"] = event["awayTeam"]["nickName"]
-        game["away_team_abbr"] = event["awayTeam"]["abbr"]
+        game["away_team_abrv"] = event["awayTeam"]["abbr"]
         game["home_spread"] = {}
         game["home_spread_odds"] = {}
         game["away_spread"] = {}
@@ -110,15 +112,15 @@ def scrape_games(sport: str = "NFL", current_line: bool = True):
 
 
 class OddsScraper:
-    def __init__(self, sport: str = "NFL", current_line: bool = True):
+    def __init__(self, sport: str = "NFL", current_line: bool = True, time_zone: str = None):
         try:
-            self.odds = scrape_games(sport, current_line)
+            self.odds = scrape_games(sport, current_line, time_zone)
         except Exception as e:
             print(f"An error occurred:\n{e}")
             return
 
 
-def main(sport: str = "NFL", current_line: bool = True):
+def main(sport: str = "NFL", current_line: bool = True, time_zone: str = None):
     games = OddsScraper(sport=sport, current_line=current_line)
     print(json.dumps(games.odds, indent=2))
 
@@ -137,5 +139,10 @@ if __name__ == "__main__":
         required=False,
         help="Pass a value to indicate whether you want the opening line (`True`), or current line (`False`).",
     )
+    parser.add_argument(
+        "--time_zone",
+        required=False,
+        help="Pass the time zone you'd like the date to be converted to, otherwise will try to convert local time.",
+    )
     args = parser.parse_args()
-    main(args.sport, args.current_line)
+    main(args.sport, args.current_line, args.time_zone)
