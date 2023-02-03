@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sports_line_scrape"
-version = "0.1.0"
+version = "0.1.1"
 description = "Package used to scrape odds at sportsline.com"
 authors = ["Mason Wrolstad <mason.wrolstad@hotmail.com>"]
 
