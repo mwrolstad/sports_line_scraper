@@ -5,7 +5,7 @@ An easy tool to scrape the current odds listed on sportsline.com
 ### Use as a command line:
 
 ```cmd
-python3 src/sports_line_scraper/__init__py --sport "NFL" --current_line True
+python3 src/sports_line_scrape/__init__py --sport "NFL" --current_line True
 ```
 
 ### Import and use as a package:
@@ -25,7 +25,7 @@ print(json.dumps(odds_scraper.odds[0], indent=2))
   "away_team": "Orlando Magic",
   "away_team_loc": "Orlando",
   "away_team_name": "Magic",
-  "away_team_abbr": "ORL",
+  "away_team_abrv": "ORL",
   "home_spread": {
     "consensus": -9.5,
     "whnj": -10.0,
