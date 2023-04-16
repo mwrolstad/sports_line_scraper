@@ -32,34 +32,27 @@ def safe_cast(value: str, to_type: type, default=None):
         return default
 
 
-def scrape_games(sport: str = "NFL", current_line: bool = True, time_zone: str = None):
-    _line = "current" if current_line else "opening"
+def get_odds(html: str) -> json:
+    j = re.findall(JSON_REGEX, html)
 
-    odds_url = f"{BASE_URL}/{SPORT_DICT[sport]}/odds/picks-against-the-spread/"
+    return extract_json(j[0]) if len(j) > 0 else []
 
-    r = requests.get(odds_url)
-    j = re.findall(JSON_REGEX, r.text)
 
-    if len(j) > 0:
-        odds = extract_json(j[0])
-
-    local_tz = pytz.timezone(time_zone) if time_zone else tz.tzlocal()
-
-    game_odds = []
-    for event in odds:
-        game = {}
+def get_game_data(event: dict, local_tz: str, _line: str) -> dict:
+    game = {}
+    try:
         game["date"] = (
             datetime.strptime(event["scheduledTime"], "%Y-%m-%dT%H:%M:%SZ")
-            .replace(tzinfo=pytz.UTC)
-            .astimezone(local_tz)
-            .date()
-            .strftime(format="%Y-%m-%d")
+                .replace(tzinfo=pytz.UTC)
+                .astimezone(local_tz)
+                .date()
+                .strftime(format="%Y-%m-%d")
         )
         game["datetime"] = (
             datetime.strptime(event["scheduledTime"], "%Y-%m-%dT%H:%M:%SZ")
-            .replace(tzinfo=pytz.UTC)
-            .astimezone(local_tz)
-            .strftime(format="%Y-%m-%dT%H:%M:%SZ")
+                .replace(tzinfo=pytz.UTC)
+                .astimezone(local_tz)
+                .strftime(format="%Y-%m-%dT%H:%M:%SZ")
         )
         game["home_team"] = event["homeTeam"]["location"] + " " + event["homeTeam"]["nickName"]
         game["home_team_loc"] = event["homeTeam"]["location"]
@@ -78,36 +71,58 @@ def scrape_games(sport: str = "NFL", current_line: bool = True, time_zone: str =
         game["total"] = {}
         game["home_ml"] = {}
         game["away_ml"] = {}
-        if "odds" in event:
-            for line in event["odds"]:
-                game["home_spread"][line["sportsbookName"]] = safe_cast(
-                    line["odd"]["pointSpread"][f"{_line}HomeHandicap"], float
+        if "sportsBookOdds" in event:
+            sportsbook_odds = event["sportsBookOdds"]
+            for sportsbook in sportsbook_odds.keys():
+                line = sportsbook_odds[sportsbook]
+                game["home_spread"][sportsbook] = safe_cast(
+                    line["spread"]["home"][f"{_line}{'value' if len(_line) == 0 else 'Value'}"], float, default=1
                 )
-                game["home_spread_odds"][line["sportsbookName"]] = safe_cast(
-                    line["odd"]["pointSpread"][f"{_line}HomeOdds"], int
+                game["home_spread_odds"][sportsbook] = safe_cast(
+                    line["spread"]["home"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"], int, default=100
                 )
-                game["away_spread"][line["sportsbookName"]] = safe_cast(
-                    line["odd"]["pointSpread"][f"{_line}AwayHandicap"], float
+                game["away_spread"][sportsbook] = safe_cast(
+                    line["spread"]["away"][f"{_line}{'value' if len(_line) == 0 else 'Value'}"], float, default=1
                 )
-                game["away_spread_odds"][line["sportsbookName"]] = safe_cast(
-                    line["odd"]["pointSpread"][f"{_line}AwayOdds"], int
+                game["away_spread_odds"][sportsbook] = safe_cast(
+                    line["spread"]["away"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"], int, default=100
                 )
-                game["under_odds"][line["sportsbookName"]] = safe_cast(
-                    line["odd"]["overUnder"][f"{_line}UnderOdd"], int
+                game["under_odds"][sportsbook] = safe_cast(
+                    line["total"]["under"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"], int, default=100
                 )
-                game["over_odds"][line["sportsbookName"]] = safe_cast(
-                    line["odd"]["overUnder"][f"{_line}OverOdd"], int
+                game["over_odds"][sportsbook] = safe_cast(
+                    line["total"]["over"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"], int, default=100
                 )
-                game["total"][line["sportsbookName"]] = safe_cast(
-                    line["odd"]["overUnder"][f"{_line}Total"], float
+                game["total"][sportsbook] = safe_cast(
+                    line["total"]["over"][f"{_line}{'value' if len(_line) == 0 else 'Value'}"], float
                 )
-                game["home_ml"][line["sportsbookName"]] = safe_cast(
-                    line["odd"]["moneyLine"][f"{_line}HomeOdds"], int
+                game["home_ml"][sportsbook] = safe_cast(
+                    line["moneyline"]["home"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"], int, default=100
                 )
-                game["away_ml"][line["sportsbookName"]] = safe_cast(
-                    line["odd"]["moneyLine"][f"{_line}AwayOdds"], int
+                game["away_ml"][sportsbook] = safe_cast(
+                    line["moneyline"]["away"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"], int, default=100
                 )
-        game_odds.append(game)
+    except Exception as e:
+        print("Exception:", e)
+    finally:
+        return game
+
+
+def scrape_games(sport: str = "NFL", current_line: bool = True, time_zone: str = None):
+    _line = "" if current_line else "opening"
+
+    odds_url = f"{BASE_URL}/{SPORT_DICT[sport]}/odds/picks-against-the-spread/"
+
+    r = requests.get(odds_url)
+    
+    odds = get_odds(r.text)
+    
+    local_tz = pytz.timezone(time_zone) if time_zone else tz.tzlocal()
+
+    game_odds = []
+    for event in odds:
+        game_odds.append(get_game_data(event, local_tz, _line))
+
     return game_odds
 
 
@@ -121,7 +136,7 @@ class OddsScraper:
 
 
 def main(sport: str = "NFL", current_line: bool = True, time_zone: str = None):
-    games = OddsScraper(sport=sport, current_line=current_line)
+    games = OddsScraper(sport=sport, current_line=current_line, time_zone=time_zone)
     print(json.dumps(games.odds, indent=2))
 
 
