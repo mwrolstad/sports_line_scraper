@@ -12,5 +12,6 @@ def test_get_odds():
         # print(odds[0]["sportsBookOdds"].keys())
         print(json.dumps(get_game_data(odds[0], tz.tzlocal(), "")))
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     test_get_odds()

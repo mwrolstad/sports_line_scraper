@@ -42,16 +42,16 @@ def get_game_data(event: dict, local_tz: str, _line: str) -> dict:
     try:
         game["date"] = (
             datetime.strptime(event["scheduledTime"], "%Y-%m-%dT%H:%M:%SZ")
-                .replace(tzinfo=pytz.UTC)
-                .astimezone(local_tz)
-                .date()
-                .strftime(format="%Y-%m-%d")
+            .replace(tzinfo=pytz.UTC)
+            .astimezone(local_tz)
+            .date()
+            .strftime(format="%Y-%m-%d")
         )
         game["datetime"] = (
             datetime.strptime(event["scheduledTime"], "%Y-%m-%dT%H:%M:%SZ")
-                .replace(tzinfo=pytz.UTC)
-                .astimezone(local_tz)
-                .strftime(format="%Y-%m-%dT%H:%M:%SZ")
+            .replace(tzinfo=pytz.UTC)
+            .astimezone(local_tz)
+            .strftime(format="%Y-%m-%dT%H:%M:%SZ")
         )
         game["home_team"] = event["homeTeam"]["location"] + " " + event["homeTeam"]["nickName"]
         game["home_team_loc"] = event["homeTeam"]["location"]
@@ -78,28 +78,40 @@ def get_game_data(event: dict, local_tz: str, _line: str) -> dict:
                     line["spread"]["home"][f"{_line}{'value' if len(_line) == 0 else 'Value'}"], float, default=1
                 )
                 game["home_spread_odds"][sportsbook] = safe_cast(
-                    line["spread"]["home"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"], int, default=100
+                    line["spread"]["home"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"],
+                    int,
+                    default=100,
                 )
                 game["away_spread"][sportsbook] = safe_cast(
                     line["spread"]["away"][f"{_line}{'value' if len(_line) == 0 else 'Value'}"], float, default=1
                 )
                 game["away_spread_odds"][sportsbook] = safe_cast(
-                    line["spread"]["away"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"], int, default=100
+                    line["spread"]["away"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"],
+                    int,
+                    default=100,
                 )
                 game["under_odds"][sportsbook] = safe_cast(
-                    line["total"]["under"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"], int, default=100
+                    line["total"]["under"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"],
+                    int,
+                    default=100,
                 )
                 game["over_odds"][sportsbook] = safe_cast(
-                    line["total"]["over"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"], int, default=100
+                    line["total"]["over"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"],
+                    int,
+                    default=100,
                 )
                 game["total"][sportsbook] = safe_cast(
                     line["total"]["over"][f"{_line}{'value' if len(_line) == 0 else 'Value'}"], float
                 )
                 game["home_ml"][sportsbook] = safe_cast(
-                    line["moneyline"]["home"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"], int, default=100
+                    line["moneyline"]["home"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"],
+                    int,
+                    default=100,
                 )
                 game["away_ml"][sportsbook] = safe_cast(
-                    line["moneyline"]["away"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"], int, default=100
+                    line["moneyline"]["away"][f"{_line}{'outcomeOdds' if len(_line) == 0 else 'OutcomeOdds'}"],
+                    int,
+                    default=100,
                 )
     except Exception as e:
         print("Exception:", e)
