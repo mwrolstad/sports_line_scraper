@@ -20,7 +20,7 @@ BASE_URL = "https://www.sportsline.com"
 
 
 def extract_json(json_string: str) -> json:
-    return json.loads(json_string)["props"]["initialState"]["oddsPageState"]["pageState"]["data"][
+    return json.loads(json.loads(json_string)["props"]["initialState"])["oddsPageState"]["pageState"]["data"][
         "competitionOdds"
     ]
 
@@ -34,7 +34,6 @@ def safe_cast(value: str, to_type: type, default=None):
 
 def get_odds(html: str) -> json:
     j = re.findall(JSON_REGEX, html)
-
     return extract_json(j[0]) if len(j) > 0 else []
 
 
@@ -112,11 +111,10 @@ def scrape_games(sport: str = "NFL", current_line: bool = True, time_zone: str =
     _line = "" if current_line else "opening"
 
     odds_url = f"{BASE_URL}/{SPORT_DICT[sport]}/odds/picks-against-the-spread/"
+    print("About to scrape", odds_url)
 
     r = requests.get(odds_url)
-    
     odds = get_odds(r.text)
-    
     local_tz = pytz.timezone(time_zone) if time_zone else tz.tzlocal()
 
     game_odds = []
